@@ -1,0 +1,178 @@
+#!/usr/bin/env node
+
+var util = require('util')
+var fs   = require('fs')
+var vm   = require('vm')
+
+var opt = {
+	depth  : null,
+	string : false,
+	write  : false,
+	colors : process.stdout.isTTY
+}
+var pre = {
+	armap  : 'abcdefghijklmnopqrstuvw'.split(''),
+	sleep  : 0,
+	input  : '',
+	names  : [],
+	exec   : [],
+	files  : []
+}
+var run = {
+	context: {},
+	scripts: [],
+	objects: []
+}
+
+for(var i = 0; i < process.argv.length; i++) {
+	var a = process.argv[i]
+
+	if(i < 2) { // node ~/bin/json
+
+	} else if(/^-[a-zA-Z]+$/.test(a)) { // -oPts
+		argv_read_shortarg(a, i)
+	} else {
+		argv_read_filename(a, i)
+	}
+}
+
+function warn(text) {
+	process.stderr.write(text +'\n')
+}
+function argv_read_shortarg(batch, index) {
+	var arg, args = batch.slice(1).split('')
+
+	while(arg = args.pop()) switch(arg) {
+		case 's': opt.string  = true       ;break
+		case 'w': opt.write   = true       ;break
+		case 'd': opt.dump    = true       ;break
+		case 'z': opt.depth++              ;break
+		case 'c': opt.colors = !opt.colors ;break
+		case 'e': pre.exec[index + 1] = 1  ;break
+
+		default:
+			warn('Unrecognised option: -'+ o)
+	}
+}
+function argv_read_filename(name, index) {
+	pre.sleep++
+
+	fs.stat(name, function(err, stat) {
+		if(err || !(stat.isFile() || stat.isFIFO())) return check_n_go()
+
+		fs.readFile(name, function(err, data) {
+			if(err) {
+				warn('Error reading file "'+ name +'": '+ err)
+			} else {
+				pre.names[index] = name
+				pre.files[index] = data +''
+			}
+			check_n_go()
+		})
+	})
+}
+
+if(!process.stdin.isTTY) {
+	pre.sleep++
+
+	process.stdin.on('readable', function() {
+		pre.input += process.stdin.read() || ''
+	})
+
+	process.stdin.on('end', check_n_go)
+}
+
+function check_n_go() {
+	--pre.sleep || go()
+}
+
+function go() {
+	if(pre.input) run.objects.push({
+		name: ':stdin:',
+		data: pre.input
+	})
+
+	for(var i = 0; i < process.argv.length; i++) {
+		var argi = process.argv[i]
+		,   name = pre.names[i]
+		,   data = pre.files[i]
+
+		if(i >= 2 && !/^-[a-zA-Z]+$/.test(argi) && !name) {
+			name = 'commandline #'+ i
+			data = argi
+				.replace(/#{/g, 'function(x,y,z) {')
+				.replace(/@/g, 'return ') 
+			pre.exec[i] = 1
+		}
+
+		if(pre.exec[i]) {
+			run.scripts.push({
+				name: name,
+				source: data,
+				output: null,
+				func: new vm.Script(data, { filename: name })
+			})
+
+		} else if(name) {
+
+			if(run.objects.length < 23) {
+				run.objects.push({
+					name: name,
+					data: data
+				})
+			} else {
+				warn('Too many files given, "'+ name +'" dropped')
+			}
+		}
+	}
+
+	for(var i = 0; i < run.objects.length; i++) {
+		var file = run.objects[i]
+		file.argument = pre.armap[i]
+
+		try {
+			file.object = JSON.parse(file.data)
+		} catch(err) {
+			file.error  = err
+			file.object = file.data
+		}
+
+		run.context[file.argument] = file.object
+	}
+
+	run.context.warn = warn
+	run.context.run  = run
+	run.context = vm.createContext(run.context)
+
+	run.scripts.forEach(function(script) {
+		try {
+			run.output = script.output = script.func.runInContext(run.context)
+		} catch(e) {
+			run.output = script.output = e
+		}
+	})
+
+	if(run.output == undefined) {
+		run.output = run.objects[0].object
+	}
+
+	if(opt.dump) {
+		run.result = run.scripts.map(function(s) { return s.source }).join('\n')
+	} else if(opt.string || opt.write) {
+		run.result = JSON.stringify(run.output)
+	} else {
+		run.result = util.inspect(run.output, {
+			colors : opt.colors,
+			depth  : opt.depth
+		})
+	}
+
+	if(opt.write) {
+		var file = run.objects[pre.input ? 1 : 0]
+		fs.writeFileSync(file.name, run.result)
+	} else {
+		process.stdout.write(run.result +'\n')
+	}
+}
+
+// vim:set ft=javascript:
