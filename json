@@ -134,7 +134,7 @@ function go() {
 			file.object = JSON.parse(file.data)
 		} catch(err) {
 			file.error  = err
-			file.object = file.data
+			file.object = file.data.split(/\r?\n/).filter(Boolean)
 		}
 
 		run.context[file.argument] = file.object
