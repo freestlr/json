@@ -146,14 +146,16 @@ function go() {
 
 	run.scripts.forEach(function(script) {
 		try {
-			run.output = script.output = script.func.runInContext(run.context)
+			run.context.$ = script.output = script.func.runInContext(run.context)
 		} catch(e) {
-			run.output = script.output = e
+			run.context.$ = script.output = e
 		}
 	})
 
-	if(run.output == undefined) {
+	if(run.context.$ == undefined) {
 		run.output = run.objects[0].object
+	} else {
+		run.output = run.context.$
 	}
 
 	if(opt.dump) {
