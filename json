@@ -46,6 +46,7 @@ function argv_read_shortarg(batch, index) {
 		case 's': opt.string  = true       ;break
 		case 'w': opt.write   = true       ;break
 		case 'd': opt.dump    = true       ;break
+		case 'u': opt.unwrap  = true       ;break
 		case 'z': opt.depth++              ;break
 		case 'c': opt.colors = !opt.colors ;break
 		case 'e': pre.exec[index + 1] = 1  ;break
@@ -109,7 +110,7 @@ function go() {
 			run.scripts.push({
 				name: name,
 				source: data,
-				output: null,
+				output: undefined,
 				func: new vm.Script(data, { filename: name })
 			})
 
@@ -162,6 +163,8 @@ function go() {
 		run.result = run.scripts.map(function(s) { return s.source }).join('\n')
 	} else if(opt.string || opt.write) {
 		run.result = JSON.stringify(run.output)
+	} else if(opt.unwrap && 'string' === typeof run.output) {
+		run.result = run.output
 	} else {
 		run.result = util.inspect(run.output, {
 			colors : opt.colors,
