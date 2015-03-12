@@ -16,6 +16,7 @@ var pre = {
 	input  : '',
 	names  : [],
 	exec   : [],
+	raw    : [],
 	files  : []
 }
 var run = {
@@ -50,6 +51,7 @@ function argv_read_shortarg(batch, index) {
 		case 'z': opt.depth++              ;break
 		case 'c': opt.colors = !opt.colors ;break
 		case 'e': pre.exec[index + 1] = 1  ;break
+		case 'r': pre.raw [index + 1] = 1  ;break
 
 		default:
 			warn('Unrecognised option: -'+ o)
@@ -119,6 +121,7 @@ function go() {
 			if(run.objects.length < 23) {
 				run.objects.push({
 					name: name,
+					raw : pre.raw[i],
 					data: data
 				})
 			} else {
@@ -131,7 +134,9 @@ function go() {
 		var file = run.objects[i]
 		file.argument = pre.armap[i]
 
-		try {
+		if(file.raw) {
+			file.object = file.data
+		} else try {
 			file.object = JSON.parse(file.data)
 		} catch(err) {
 			file.error  = err
