@@ -38,7 +38,7 @@ for(var i = 0; i < process.argv.length; i++) {
 }
 
 function warn(text) {
-	process.stderr.write(text +'\n')
+	opt.verbose && process.stderr.write(text +'\n')
 }
 function argv_read_shortarg(batch, index) {
 	var arg, args = batch.slice(1).split('')
@@ -48,6 +48,7 @@ function argv_read_shortarg(batch, index) {
 		case 'w': opt.write   = true       ;break
 		case 'd': opt.dump    = true       ;break
 		case 'u': opt.unwrap  = true       ;break
+		case 'v': opt.verbose = true       ;break
 		case 'z': opt.depth++              ;break
 		case 'c': opt.colors = !opt.colors ;break
 		case 'e': pre.exec[index + 1] = 1  ;break
