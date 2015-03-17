@@ -171,6 +171,8 @@ function go() {
 		run.result = JSON.stringify(run.output)
 	} else if(opt.unwrap && 'string' === typeof run.output) {
 		run.result = run.output
+	} else if(opt.unwrap && '[object Array]' === Object.prototype.toString.call(run.output)) {
+		run.result = run.output.join('\n')
 	} else {
 		run.result = util.inspect(run.output, {
 			colors : opt.colors,
