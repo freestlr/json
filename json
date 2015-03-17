@@ -6,8 +6,6 @@ var vm   = require('vm')
 
 var opt = {
 	depth  : null,
-	string : false,
-	write  : false,
 	colors : process.stdout.isTTY
 }
 var pre = {
@@ -49,6 +47,7 @@ function argv_read_shortarg(batch, index) {
 		case 'd': opt.dump    = true       ;break
 		case 'u': opt.unwrap  = true       ;break
 		case 'v': opt.verbose = true       ;break
+		case 'n': opt.noeofnl = true       ;break
 		case 'z': opt.depth++              ;break
 		case 'c': opt.colors = !opt.colors ;break
 		case 'e': pre.exec[index + 1] = 1  ;break
@@ -179,12 +178,13 @@ function go() {
 			depth  : opt.depth
 		})
 	}
+	if(!opt.noeofnl) run.result += '\n'
 
 	if(opt.write) {
 		var file = run.objects[pre.input ? 1 : 0]
 		fs.writeFileSync(file.name, run.result)
 	} else {
-		process.stdout.write(run.result +'\n')
+		process.stdout.write(run.result)
 	}
 }
 
