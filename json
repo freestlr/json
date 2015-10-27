@@ -9,7 +9,7 @@ var opt = {
 	colors : process.stdout.isTTY
 }
 var pre = {
-	armap  : 'abcdefghijklmnopqrstuvw'.split(''),
+	armap  : '_abcdefghijklmnopqrstuvw'.split(''),
 	sleep  : 0,
 	input  : '',
 	names  : [],
@@ -90,7 +90,7 @@ function check_n_go() {
 }
 
 function go() {
-	if(pre.input) run.objects.push({
+	run.objects.push({
 		name: ':stdin:',
 		data: pre.input
 	})
@@ -104,7 +104,7 @@ function go() {
 			name = 'commandline #'+ i
 			data = argi
 				.replace(/#{/g, 'function(x,y,z) {')
-				.replace(/@/g, 'return ') 
+				.replace(/@/g, 'return ')
 			pre.exec[i] = 1
 		}
 
