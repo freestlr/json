@@ -136,11 +136,13 @@ function go() {
 
 		if(file.raw) {
 			file.object = file.data
-		} else try {
+		} else if(file.data) try {
 			file.object = JSON.parse(file.data)
 		} catch(err) {
 			file.error  = err
 			file.object = file.data.split(/\r?\n/).filter(Boolean)
+		} else {
+			file.object = null
 		}
 
 		run.context[file.argument] = file.object
@@ -158,8 +160,8 @@ function go() {
 		}
 	})
 
-	if(run.context.$ == undefined) {
-		run.output = run.objects[0].object
+	if(run.context.$ === undefined) {
+		run.output = run.context._ || run.context.a
 	} else {
 		run.output = run.context.$
 	}
