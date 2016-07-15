@@ -183,7 +183,7 @@ function go() {
 	if(!opt.noeofnl) run.result += '\n'
 
 	if(opt.write) {
-		var file = run.objects[pre.input ? 1 : 0]
+		var file = run.objects[1]
 		fs.writeFileSync(file.name, run.result)
 	} else {
 		process.stdout.write(run.result)
