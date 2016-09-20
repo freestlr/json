@@ -38,11 +38,13 @@ for(var i = 0; i < process.argv.length; i++) {
 function warn(text) {
 	opt.verbose && process.stderr.write(text +'\n')
 }
+
 function argv_read_shortarg(batch, index) {
 	var arg, args = batch.slice(1).split('')
 
 	while(arg = args.pop()) switch(arg) {
 		case 's': opt.string  = true       ;break
+		case 'f': opt.format  = true       ;break
 		case 'w': opt.write   = true       ;break
 		case 'd': opt.dump    = true       ;break
 		case 'u': opt.unwrap  = true       ;break
@@ -57,6 +59,7 @@ function argv_read_shortarg(batch, index) {
 			warn('Unrecognised option: -'+ o)
 	}
 }
+
 function argv_read_filename(name, index) {
 	pre.sleep++
 
@@ -168,6 +171,8 @@ function go() {
 
 	if(opt.dump) {
 		run.result = run.scripts.map(function(s) { return s.source }).join('\n')
+	} else if(opt.format) {
+		run.result = format(run.output)
 	} else if(opt.string || opt.write) {
 		run.result = JSON.stringify(run.output)
 	} else if(opt.unwrap && 'string' === typeof run.output) {
@@ -188,6 +193,78 @@ function go() {
 	} else {
 		process.stdout.write(run.result)
 	}
+}
+
+function format(object, tab, size, level, field, drop) {
+	level = level |0
+	tab   = tab  || '\t'
+	size  = size || 100
+	drop  = drop || []
+
+	var indent = Array(level +1).join(tab || '\t')
+	,   string
+
+	if(object && typeof object === 'object') {
+		if(typeof Node !== 'undefined' && object instanceof Node) {
+			return null
+		}
+		if(drop.indexOf(object) !== -1) {
+			return null
+		}
+		drop.push(object)
+
+		try {
+			var split = JSON.stringify(object).length > size
+
+		} catch(e) { return null }
+
+
+		var fields = []
+		,   joint = split ? ',\n': ', '
+		,   lnext = split ? level +1 : 0
+		,   brackets
+
+		if(object instanceof Array) {
+			brackets = '[]'
+			for(var i = 0; i < object.length; i++) {
+				var item = format(object[i], tab, size, lnext, null, drop)
+				fields.push(item)
+			}
+
+		} else {
+			brackets = '{}'
+			for(var name in object) {
+				var item = format(object[name], tab, size, lnext, name, drop)
+				if(item) fields.push(item)
+			}
+		}
+
+		if(split) {
+			string = brackets[0] +'\n'+ fields.join(joint) +'\n'+ indent + brackets[1]
+
+		} else {
+			string = brackets[0] + fields.join(joint) + brackets[1]
+		}
+
+	} else switch(typeof object) {
+
+		case 'object':
+		case 'boolean':
+		case 'number':
+			string = object
+		break
+
+		case 'string':
+			string = '"'+ object +'"'
+		break
+
+		default:
+		case 'function':
+		case 'undefined':
+			return null
+	}
+
+	return indent +(field ? '"'+ field +'": ' : '')+ string
 }
 
 // vim:set ft=javascript:
