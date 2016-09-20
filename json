@@ -291,7 +291,7 @@ function format(object, tab, size, level, field, drop) {
 		break
 
 		case 'string':
-			string = '"'+ object +'"'
+			string = JSON.stringify(object)
 		break
 
 		default:
@@ -300,7 +300,7 @@ function format(object, tab, size, level, field, drop) {
 			return null
 	}
 
-	return indent +(field ? '"'+ field +'": ' : '')+ string
+	return indent +(field ? JSON.stringify(field) +': ' : '')+ string
 }
 
 // vim:set ft=javascript:
