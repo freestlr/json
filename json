@@ -42,11 +42,14 @@ function warn(text) {
 }
 
 function usage() {
-	return ['Usage: '+ pre.binary +' [OPTIONS]* [FILE]*',
+	return ['Usage: '+ pre.binary +' [OPTIONS]* [FILE]* [CODE]*',
 		'',
-		'	FILE      interpret FILE as json, if no luck - split to array of strings',
+		'	FILE      if FILE is not readable, treat it as CODE',
+		'	          interpret FILE as json, if no luck - split to array of strings',
 		'	          each FILE gets its own variable "[a-z]" in order of appearance',
 		'	          stdin gets variable "_"',
+		'	CODE      javascript code executed in context of loaded files,',
+		'	          substitutions are made: see -N',
 		'	-e FILE   execute js FILE within current context',
 		'	-r FILE   raw, don\'t parse file in any way',
 		'',
@@ -55,7 +58,7 @@ function usage() {
 		'	-f   format output',
 		'	-w   write output to first FILE specified ("a" FILE)',
 		'	-d   dump inline scripts and script FILEs given by -e',
-		'	-u   unwrap output string from "quotes"',
+		'	-u   unwrap output string from "quotes" or join output array by \\n',
 		'	-0   when -u used and output is array, join lines by \\0',
 		'	-v   verbose, show some process messages',
 		'	-n   don\'t add newline at end of output',
