@@ -30,7 +30,7 @@ for(var i = 1; i < process.argv.length; i++) {
 
 	if(i === 1) {
 		pre.binary = a
-	} else if(/^-[a-zA-Z]+$/.test(a)) { // -oPts
+	} else if(/^-[a-zA-Z0]+$/.test(a)) { // -oPts
 		argv_read_shortarg(a, i)
 	} else {
 		argv_read_filename(a, i)
@@ -56,6 +56,7 @@ function usage() {
 		'	-w   write output to first FILE specified ("a" FILE)',
 		'	-d   dump inline scripts and script FILEs given by -e',
 		'	-u   unwrap output string from "quotes"',
+		'	-0   when -u used and output is array, join lines by \\0',
 		'	-v   verbose, show some process messages',
 		'	-n   don\'t add newline at end of output',
 		'	-N   disable inline script substitutions:',
@@ -73,6 +74,7 @@ function argv_read_shortarg(batch, index) {
 	while(arg = args.pop()) switch(arg) {
 		case 'h': opt.usage   = true       ;break
 		case 's': opt.string  = true       ;break
+		case '0': opt.zero    = true       ;break
 		case 'f': opt.format  = true       ;break
 		case 'w': opt.write   = true       ;break
 		case 'd': opt.dump    = true       ;break
@@ -138,7 +140,7 @@ function go() {
 		,   name = pre.names[i]
 		,   data = pre.files[i]
 
-		if(i >= 2 && !/^-[a-zA-Z]+$/.test(argi) && !name) {
+		if(i >= 2 && !/^-[a-zA-Z0]+$/.test(argi) && !name) {
 			name = 'commandline #'+ i
 			if(opt.nosubst) data = argi
 			else data = argi
@@ -214,14 +216,14 @@ function go() {
 	} else if(opt.unwrap && 'string' === typeof run.output) {
 		run.result = run.output
 	} else if(opt.unwrap && '[object Array]' === Object.prototype.toString.call(run.output)) {
-		run.result = run.output.join('\n')
+		run.result = run.output.join(opt.zero ? '\0' : '\n')
 	} else {
 		run.result = util.inspect(run.output, {
 			colors : opt.colors,
 			depth  : opt.depth
 		})
 	}
-	if(!opt.noeofnl) run.result += '\n'
+	if(!opt.noeofnl && !opt.zero) run.result += '\n'
 
 	if(opt.write) {
 		var file = run.objects[1]
