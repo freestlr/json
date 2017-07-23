@@ -63,9 +63,9 @@ function usage() {
 		'	-v   verbose, show some process messages',
 		'	-n   don\'t add newline at end of output',
 		'	-N   disable inline script substitutions:',
-		'	     "#{" -> "function(x,y,z) {"',
-		'	     "@"  -> "return "',
-		'	-d   each -d increases inspection depth by 1, default null',
+		'        /#([^{])*{/g -> "function($1) {"',
+		'	     /@/g         -> "return "',
+		'	-z   each -z increases inspection depth by 1, default null',
 		'	-c   invert colorize output, by default colors enabled for TTY',
 		''
 	].join('\n')
@@ -147,7 +147,7 @@ function go() {
 			name = 'commandline #'+ i
 			if(opt.nosubst) data = argi
 			else data = argi
-				.replace(/#{/g, 'function(x,y,z) {')
+				.replace(/#([^{])*{/g, 'function($1) {')
 				.replace(/@/g, 'return ')
 			pre.exec[i] = 1
 		}
@@ -263,9 +263,10 @@ function format(object, tab, size, level, field, drop) {
 		var fields = []
 		,   joint = split ? ',\n': ', '
 		,   lnext = split ? level +1 : 0
+		,   type = Object.prototype.toString.call(object)
 		,   brackets
 
-		if(object instanceof Array) {
+		if(type === '[object Array]') {
 			brackets = '[]'
 			for(var i = 0; i < object.length; i++) {
 				var item = format(object[i], tab, size, lnext, null, drop)
