@@ -48,8 +48,7 @@ function usage() {
 		'	          interpret FILE as json, if no luck - split to array of strings',
 		'	          each FILE gets its own variable "[a-z]" in order of appearance',
 		'	          stdin gets variable "_"',
-		'	CODE      javascript code executed in context of loaded files,',
-		'	          substitutions are made: see -N',
+		'	CODE      javascript code executed in context of loaded files',
 		'	-e FILE   execute js FILE within current context',
 		'	-r FILE   raw, don\'t parse file in any way',
 		'',
@@ -62,9 +61,6 @@ function usage() {
 		'	-0   when -u used and output is array, join lines by \\0',
 		'	-v   verbose, show some process messages',
 		'	-n   don\'t add newline at end of output',
-		'	-N   disable inline script substitutions:',
-		'        /#([^{])*{/g -> "function($1) {"',
-		'	     /@/g         -> "return "',
 		'	-z   each -z increases inspection depth by 1, default null',
 		'	-c   invert colorize output, by default colors enabled for TTY',
 		''
@@ -84,7 +80,6 @@ function argv_read_shortarg(batch, index) {
 		case 'u': opt.unwrap  = true       ;break
 		case 'v': opt.verbose = true       ;break
 		case 'n': opt.noeofnl = true       ;break
-		case 'N': opt.nosubst = true       ;break
 		case 'z': opt.depth++              ;break
 		case 'c': opt.colors = !opt.colors ;break
 		case 'e': pre.exec[index + 1] = 1  ;break
@@ -145,10 +140,7 @@ function go() {
 
 		if(i >= 2 && !/^-[a-zA-Z0]+$/.test(argi) && !name) {
 			name = 'commandline #'+ i
-			if(opt.nosubst) data = argi
-			else data = argi
-				.replace(/#([^{])*{/g, 'function($1) {')
-				.replace(/@/g, 'return ')
+			data = argi
 			pre.exec[i] = 1
 		}
 
