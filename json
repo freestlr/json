@@ -10,7 +10,6 @@ var opt = {
 }
 var pre = {
 	armap  : '_abcdefghijklmnopqrstuvw'.split(''),
-	binary : null,
 	sleep  : 0,
 	input  : '',
 	names  : [],
@@ -28,9 +27,7 @@ var run = {
 for(var i = 1; i < process.argv.length; i++) {
 	var a = process.argv[i]
 
-	if(i === 1) {
-		pre.binary = a
-	} else if(/^-[a-zA-Z0]+$/.test(a)) { // -oPts
+	if(/^-[a-zA-Z0]+$/.test(a)) { // -oPts
 		argv_read_shortarg(a, i)
 	} else {
 		argv_read_filename(a, i)
@@ -42,7 +39,7 @@ function warn(text) {
 }
 
 function usage() {
-	return ['Usage: '+ pre.binary +' [OPTIONS]* [FILE]* [CODE]*',
+	return ['Usage: '+ process.argv[1] +' [OPTIONS]* [FILE]* [CODE]*',
 		'',
 		'	FILE      if FILE is not readable, treat it as CODE',
 		'	          interpret FILE as json, if no luck - split to array of strings',
@@ -86,7 +83,7 @@ function argv_read_shortarg(batch, index) {
 		case 'r': pre.raw [index + 1] = 1  ;break
 
 		default:
-			warn('Unrecognised option: -'+ o)
+			warn('Unrecognised option: -'+ arg)
 	}
 }
 
@@ -133,12 +130,12 @@ function go() {
 		data: pre.input
 	})
 
-	for(var i = 0; i < process.argv.length; i++) {
+	for(var i = 2; i < process.argv.length; i++) {
 		var argi = process.argv[i]
 		,   name = pre.names[i]
 		,   data = pre.files[i]
 
-		if(i >= 2 && !/^-[a-zA-Z0]+$/.test(argi) && !name) {
+		if(!/^-[a-zA-Z0]+$/.test(argi) && !name) {
 			name = 'commandline #'+ i
 			data = argi
 			pre.exec[i] = 1
@@ -154,7 +151,7 @@ function go() {
 
 		} else if(name) {
 
-			if(run.objects.length < 23) {
+			if(run.objects.length < 26) {
 				run.objects.push({
 					name: name,
 					raw : pre.raw[i],
