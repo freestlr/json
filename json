@@ -6,6 +6,7 @@ var vm   = require('vm')
 
 var opt = {
 	depth  : null,
+	length : 9001,
 	colors : process.stdout.isTTY
 }
 var pre = {
@@ -44,7 +45,8 @@ function usage() {
 		'	-0   when -u used and output is array, join lines by \\0',
 		'	-v   verbose, show some process messages',
 		'	-n   don\'t add newline at end of output',
-		'	-z   each -z increases inspection depth by 1, default null',
+		'	-l N shrink arrays exceeding N elements, default: over nine thousand',
+		'	-z N set inspection depth to N, default null = full depth',
 		'	-c   enable colors output, by default colors enabled for TTY',
 		'	-C   no colors',
 		''
@@ -71,6 +73,7 @@ while(argv.length) {
 			case 'n': opt.noeofnl = true          ;break
 			case 'c': opt.colors  = true          ;break
 			case 'C': opt.colors  = false         ;break
+			case 'l': opt.length  = +argv.shift() ;break
 			case 'z': opt.depth   = +argv.shift() ;break
 			case 'e': pre.exec    = true          ;break
 			case 'r': pre.raw     = true          ;break
@@ -192,7 +195,8 @@ function go() {
 	} else {
 		run.result = util.inspect(run.output, {
 			colors : opt.colors,
-			depth  : opt.depth
+			depth  : opt.depth,
+			maxArrayLength: opt.length
 		})
 	}
 	if(!opt.noeofnl && !opt.zero) run.result += '\n'
