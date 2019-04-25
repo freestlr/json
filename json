@@ -10,29 +10,15 @@ var opt = {
 }
 var pre = {
 	armap  : '_abcdefghijklmnopqrstuvw'.split(''),
+	exec   : false,
+	raw    : false,
 	sleep  : 0,
-	input  : '',
-	names  : [],
-	exec   : [],
-	raw    : [],
-	files  : []
 }
 var run = {
-	context: {},
-	scripts: [],
-	objects: []
+	context: null,
+	objects: [{ name: ':stdin:' }],
 }
 
-// node ~/bin/json ...
-for(var i = 1; i < process.argv.length; i++) {
-	var a = process.argv[i]
-
-	if(/^-[a-zA-Z0]+$/.test(a)) { // -oPts
-		argv_read_shortarg(a, i)
-	} else {
-		argv_read_filename(a, i)
-	}
-}
 
 function warn(text) {
 	opt.verbose && process.stderr.write(text +'\n')
@@ -59,57 +45,84 @@ function usage() {
 		'	-v   verbose, show some process messages',
 		'	-n   don\'t add newline at end of output',
 		'	-z   each -z increases inspection depth by 1, default null',
-		'	-c   invert colorize output, by default colors enabled for TTY',
+		'	-c   enable colors output, by default colors enabled for TTY',
+		'	-C   no colors',
 		''
 	].join('\n')
 }
 
-function argv_read_shortarg(batch, index) {
-	var arg, args = batch.slice(1).split('')
+// node ~/bin/json ...
+var argv = process.argv.slice(2)
+while(argv.length) {
+	var a = argv.shift()
 
-	while(arg = args.pop()) switch(arg) {
-		case 'h': opt.usage   = true       ;break
-		case 's': opt.string  = true       ;break
-		case '0': opt.zero    = true       ;break
-		case 'f': opt.format  = true       ;break
-		case 'w': opt.write   = true       ;break
-		case 'd': opt.dump    = true       ;break
-		case 'u': opt.unwrap  = true       ;break
-		case 'v': opt.verbose = true       ;break
-		case 'n': opt.noeofnl = true       ;break
-		case 'z': opt.depth++              ;break
-		case 'c': opt.colors = !opt.colors ;break
-		case 'e': pre.exec[index + 1] = 1  ;break
-		case 'r': pre.raw [index + 1] = 1  ;break
+	if(/^-[a-zA-Z0]+$/.test(a)) { // -oPts
+		var o, opts = a.slice(1).split('')
 
-		default:
-			warn('Unrecognised option: -'+ arg)
-	}
+		while(o = opts.pop()) switch(o) {
+			case 'h': opt.usage   = true          ;break
+			case 's': opt.string  = true          ;break
+			case '0': opt.zero    = true          ;break
+			case 'f': opt.format  = true          ;break
+			case 'w': opt.write   = true          ;break
+			case 'd': opt.dump    = true          ;break
+			case 'u': opt.unwrap  = true          ;break
+			case 'v': opt.verbose = true          ;break
+			case 'n': opt.noeofnl = true          ;break
+			case 'c': opt.colors  = true          ;break
+			case 'C': opt.colors  = false         ;break
+			case 'z': opt.depth   = +argv.shift() ;break
+			case 'e': pre.exec    = true          ;break
+			case 'r': pre.raw     = true          ;break
+
+			default:
+				warn('Unrecognised option: -'+ o)
+		}
+
+	} else add_object(a)
 }
 
-function argv_read_filename(name, index) {
-	pre.sleep++
+function add_object(string) {
+	var object = {
+		index: run.objects.length,
+		file: true,
+		exec: pre.exec,
+		raw: pre.raw
+	}
 
-	fs.stat(name, function(err, stat) {
-		if(err || !(stat.isFile() || stat.isFIFO())) return check_n_go()
+	fs.stat(string, function(err, stat) {
+		if(err || !(stat.isFile() || stat.isFIFO())) {
+			object.name = 'commandline #'+ object.index
+			object.data = string
+			object.file = false
+			object.exec = true
+			return check_n_go()
+		}
 
-		fs.readFile(name, function(err, data) {
+		fs.readFile(string, function(err, data) {
 			if(err) {
-				warn('Error reading file "'+ name +'": '+ err)
+				warn('Error reading file "'+ string +'": '+ err)
+
 			} else {
-				pre.names[index] = name
-				pre.files[index] = data +''
+				object.name = string
+				object.data = data +''
 			}
 			check_n_go()
 		})
 	})
+
+	pre.sleep++
+	pre.exec = false
+	pre.raw = false
+	run.objects.push(object)
 }
+
 
 if(!process.stdin.isTTY) {
 	pre.sleep++
 
 	process.stdin.on('readable', function() {
-		pre.input += process.stdin.read() || ''
+		run.objects[0].data += process.stdin.read() || ''
 	})
 
 	process.stdin.on('end', check_n_go)
@@ -125,73 +138,40 @@ if(opt.usage || !pre.sleep) {
 }
 
 function go() {
-	run.objects.push({
-		name: ':stdin:',
-		data: pre.input
-	})
-
-	for(var i = 2; i < process.argv.length; i++) {
-		var argi = process.argv[i]
-		,   name = pre.names[i]
-		,   data = pre.files[i]
-
-		if(!/^-[a-zA-Z0]+$/.test(argi) && !name) {
-			name = 'commandline #'+ i
-			data = argi
-			pre.exec[i] = 1
-		}
-
-		if(pre.exec[i]) {
-			run.scripts.push({
-				name: name,
-				source: data,
-				output: undefined,
-				func: new vm.Script(data, { filename: name })
-			})
-
-		} else if(name) {
-
-			if(run.objects.length < 26) {
-				run.objects.push({
-					name: name,
-					raw : pre.raw[i],
-					data: data
-				})
-			} else {
-				warn('Too many files given, "'+ name +'" dropped')
-			}
-		}
-	}
-
-	for(var i = 0; i < run.objects.length; i++) {
-		var file = run.objects[i]
-		file.argument = pre.armap[i]
-
-		if(file.raw) {
-			file.object = file.data
-		} else if(file.data) try {
-			file.object = JSON.parse(file.data)
-		} catch(err) {
-			file.error  = err
-			file.object = file.data.split(/\r?\n/).filter(Boolean)
-		} else {
-			file.object = null
-		}
-
-		run.context[file.argument] = file.object
-	}
-
+	run.context = vm.createContext({})
 	run.context.warn = warn
 	run.context.run  = run
-	run.context = vm.createContext(run.context)
 
-	run.scripts.forEach(function(script) {
-		try {
-			run.context.$ = script.output = script.func.runInContext(run.context)
-		} catch(e) {
-			run.context.$ = script.output = e
+	for(var i = 0; i < run.objects.length; i++) {
+		var object = run.objects[i]
+
+		object.argument = pre.armap[i] || '$'+ object.index
+
+		if(object.exec) {
+			var func = new vm.Script(object.data, { filename: object.name })
+
+			try {
+				object.output = func.runInContext(run.context)
+			} catch(e) {
+				object.output = e
+			}
+
+		} else if(object.file) {
+
+			if(object.raw) {
+				object.output = object.data
+			} else if(object.data) try {
+				object.output = JSON.parse(object.data)
+			} catch(err) {
+				object.error  = err
+				object.output = object.data.split(/\r?\n/).filter(Boolean)
+			} else {
+				object.output = null
+			}
 		}
-	})
+
+		run.context.$ = run.context[object.argument] = object.output
+	}
 
 	if(run.context.$ === undefined) {
 		run.output = run.context._ || run.context.a
@@ -200,7 +180,7 @@ function go() {
 	}
 
 	if(opt.dump) {
-		run.result = run.scripts.map(function(s) { return s.source }).join('\n')
+		run.result = run.objects.map(function(o) { return o.exec ? o.data : '' }).join('\n')
 	} else if(opt.format) {
 		run.result = format(run.output)
 	} else if(opt.string || opt.write) {
