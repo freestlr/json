@@ -167,7 +167,7 @@ function go() {
 				object.output = JSON.parse(object.data)
 			} catch(err) {
 				object.error  = err
-				object.output = object.data.split(/\r?\n/).filter(Boolean)
+				object.output = object.data.split(/\r?\n/)
 			} else {
 				object.output = null
 			}
