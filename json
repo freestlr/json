@@ -176,11 +176,7 @@ function go() {
 		run.context.$ = run.context[object.argument] = object.output
 	}
 
-	if(run.context.$ === undefined) {
-		run.output = run.context._ || run.context.a
-	} else {
-		run.output = run.context.$
-	}
+	run.output = run.context.$
 
 	if(opt.dump) {
 		run.result = run.objects.map(function(o) { return o.exec ? o.data : '' }).join('\n')
