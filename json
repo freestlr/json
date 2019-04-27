@@ -17,7 +17,7 @@ var pre = {
 }
 var run = {
 	context: null,
-	objects: [{ name: ':stdin:' }],
+	objects: [{ name: ':stdin:', data: '', file: true }],
 }
 
 
