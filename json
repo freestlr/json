@@ -21,8 +21,8 @@ var run = {
 }
 
 
-function warn(text) {
-	opt.verbose && process.stderr.write(text +'\n')
+function warn() {
+	opt.verbose && console.log.apply(console, arguments)
 }
 
 function usage() {
@@ -142,8 +142,12 @@ if(opt.usage || !pre.sleep) {
 
 function go() {
 	run.context = vm.createContext({})
-	run.context.warn = warn
-	run.context.run  = run
+	run.context.run = run
+	run.context.console = {
+		log: warn,
+		warn: warn,
+		error: warn
+	}
 
 	for(var i = 0; i < run.objects.length; i++) {
 		var object = run.objects[i]
