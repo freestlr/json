@@ -94,21 +94,33 @@ function add_object(string) {
 	}
 
 	fs.stat(string, function(err, stat) {
-		if(err || !(stat.isFile() || stat.isFIFO())) {
+		if(err || !( stat.isFile() || stat.isFIFO() || stat.isDirectory() )) {
 			object.name = 'commandline #'+ object.index
 			object.data = string
 			object.file = false
 			object.exec = true
-			return check_n_go()
-		}
 
-		fs.readFile(string, function(err, data) {
+			check_n_go()
+
+		} else if(stat.isFile() || stat.isFIFO()) fs.readFile(string, function(err, data) {
 			if(err) {
 				warn('Error reading file "'+ string +'": '+ err)
 
 			} else {
 				object.name = string
 				object.data = data +''
+			}
+			check_n_go()
+		})
+
+		else if(stat.isDirectory()) fs.readdir(string, function(err, data) {
+			if(err) {
+				warn('Error reading directory "'+ string +'": '+ err)
+
+			} else {
+				object.name = string
+				object.data = data
+				object.raw = true
 			}
 			check_n_go()
 		})
