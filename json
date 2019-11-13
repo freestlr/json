@@ -189,7 +189,10 @@ function go() {
 			}
 		}
 
-		run.context.$ = run.context[object.argument] = object.output
+		run.context.$ =
+		run.context[object.argument] =
+		run.context['$'+ object.index] =
+			object.output
 	}
 
 	var output = run.context.$
