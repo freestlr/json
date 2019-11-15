@@ -202,7 +202,7 @@ function go() {
 		result = run.objects.map(function(o) { return o.exec ? o.data : '' }).join('\n')
 	} else if(opt.format) {
 		result = format(output)
-	} else if(opt.string || opt.write) {
+	} else if(opt.string) {
 		result = JSON.stringify(output)
 	} else if(opt.unwrap && 'string' === typeof output) {
 		result = output
@@ -214,6 +214,9 @@ function go() {
 			depth  : opt.depth,
 			maxArrayLength: opt.length
 		})
+	}
+	if(opt.write && typeof result !== 'string') {
+		result = JSON.stringify(result)
 	}
 	if(!opt.noeofnl && !opt.zero) result += '\n'
 
